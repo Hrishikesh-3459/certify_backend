@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 import json
 from flask import jsonify, Flask, flash, request
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -5,6 +6,7 @@ from flask_cors import CORS
 from db_config import dbMysql
 import jwt
 from functools import wraps
+from uuid import uuid1
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -103,10 +105,38 @@ def login():
 
 @app.route("/admin", methods=["GET"])
 @login_required  
-def getAdmins(user_email):
+def getAdmins(admin_email):
     try:
         mycursor.execute("SELECT id, name, email FROM admin")
         admins = mycursor.fetchall()
         return jsonify({"Message": "List of admins", "admins": admins}), 200
+    except Exception as e:
+        return jsonify({"Message": "Something Went Wrong", "Error": e}), 500
+
+
+@app.route("/certificate", methods=["POST"])
+@login_required
+def createCertificate(admin_email):
+    req_data = request.get_json()
+    required_parameters = ["startDate", "endDate", "role", "firstName", "lastName", "email"]
+    values = []
+    for i in required_parameters:
+        if i not in req_data:
+            return jsonify({"Message": "Required Feilds Empty"}), 401
+        else:
+            values.append(req_data.i)
+
+    try:
+        id = uuid1()
+        mycursor.execute("SELECT id FROM admin WHERE email = (%s)", (req_data["email"],))
+        phone = None
+        if "phone" in req_data:
+            phone = req_data["phone"]
+        createdBy = mycursor.fetchone()["id"]
+        values.extend([id, phone, createdBy])
+        # Haven't tested yet
+        mycursor.execute("INSERT INTO certificate(startDate, endDate, role, firstName, lastName, email, id, phone, createdBy) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)", values)
+        mydb.commit()
+        return jsonify({"Message": "Admin Created"}), 200
     except Exception as e:
         return jsonify({"Message": "Something Went Wrong", "Error": e}), 500

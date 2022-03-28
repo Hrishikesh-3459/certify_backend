@@ -35,3 +35,18 @@ class dbMysql():
             "email VARCHAR(255) NOT NULL,"
             "PRIMARY KEY (id))")
         self.mydb.commit()
+
+        mycursor.execute(
+            "CREATE TABLE IF NOT EXISTS certificate (id VARCHAR(255) NOT NULL,"
+            "createdBy INT NOT NULL,"
+            "startDate DATE NOT NULL,"
+            "endDate DATE NOT NULL,"
+            "issueDate DATE DEFAULT (CURRENT_DATE),"
+            "role VARCHAR(255) NOT NULL,"
+            "firstName VARCHAR(255) NOT NULL,"
+            "lastName VARCHAR(255) NOT NULL,"
+            "email VARCHAR(255) NOT NULL,"
+            "phone INT,"
+            "PRIMARY KEY (id),"
+            "FOREIGN KEY (createdBy) REFERENCES admin(id))")
+        self.mydb.commit()
