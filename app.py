@@ -1,5 +1,3 @@
-from contextlib import nullcontext
-import json
 from flask import jsonify, Flask, flash, request
 from werkzeug.security import check_password_hash, generate_password_hash
 from flask_cors import CORS
@@ -60,6 +58,7 @@ def index():
 @app.route("/register", methods=["POST"])
 def register():
     req_data = request.get_json()
+    print(req_data)
     try:
         email = req_data["email"]
         password = req_data["password"]
@@ -111,7 +110,8 @@ def getAdmins(admin_email):
         admins = mycursor.fetchall()
         return jsonify({"Message": "List of admins", "admins": admins}), 200
     except Exception as e:
-        return jsonify({"Message": "Something Went Wrong", "Error": e}), 500
+        print(e)
+        return jsonify({"Message": "Something Went Wrong"}), 500
 
 
 @app.route("/certificate", methods=["POST"])
@@ -124,19 +124,81 @@ def createCertificate(admin_email):
         if i not in req_data:
             return jsonify({"Message": "Required Feilds Empty"}), 401
         else:
-            values.append(req_data.i)
+            values.append(req_data[i])
 
     try:
-        id = uuid1()
+        id = str(uuid1())
         mycursor.execute("SELECT id FROM admin WHERE email = (%s)", (req_data["email"],))
         phone = None
         if "phone" in req_data:
             phone = req_data["phone"]
         createdBy = mycursor.fetchone()["id"]
         values.extend([id, phone, createdBy])
-        # Haven't tested yet
+
         mycursor.execute("INSERT INTO certificate(startDate, endDate, role, firstName, lastName, email, id, phone, createdBy) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s)", values)
         mydb.commit()
-        return jsonify({"Message": "Admin Created"}), 200
+        return jsonify({"Message": "Certificate Created"}), 200
     except Exception as e:
-        return jsonify({"Message": "Something Went Wrong", "Error": e}), 500
+        print(e)
+        return jsonify({"Message": "Something Went Wrong"}), 500
+
+
+@app.route("/certificate", methods=["GET"])
+@login_required
+def getCertificateDetails():
+    try:
+        mycursor.execute("SELECT * FROM certificate")
+        certificates = mycursor.fetchall()
+        return jsonify({"Message": "List of certificates", "Certificates": certificates})
+    except Exception as e:
+        print(e)
+        return jsonify({"Message": "Something Went Wrong"}), 500
+
+@app.route("/certificate/<certificate_id>", methods=["GET"])
+def getCertificateById(admin_email, certificate_id):
+    try:
+        certificate_id = certificate_id
+        mycursor.execute("SELECT * FROM certificate WHERE id = (%s)", (certificate_id, ))
+        certificate = mycursor.fetchone()
+        return jsonify({"Message": f"Certificate by id = {certificate_id}", "certificate": certificate})
+    except Exception as e:
+        print(e)
+        return jsonify({"Message": "Something Went Wrong"}), 500
+
+
+@app.route("/adminCertificate/<admin_id>", methods=["GET"])
+@login_required
+def getCertificateByAdminId(admin_email, admin_id):
+    try:
+        admin_id = admin_id
+        mycursor.execute("SELECT id FROM admin WHERE email = (%s)", (admin_email,))
+        loggedin_admin_id = mycursor.fetchone()["id"]
+        print(f"loggedin_admin_id = {loggedin_admin_id}")
+        print(f"admin_id = {admin_id}")
+        if int(loggedin_admin_id) != int(admin_id):
+            return jsonify({"Message": "You do not have access to view certificates"}), 403
+        mycursor.execute("SELECT * FROM certificate WHERE createdBy = (%s)", (admin_id,))
+        certificates = mycursor.fetchall()
+        return jsonify({"Message": f"List of certificates by adminid = {admin_id}", "certificate": certificates})
+    except Exception as e:
+        print(e)
+        return jsonify({"Message": "Something Went Wrong"}), 500
+
+
+@app.route("/certificate/<certificate_id>", methods=["DELETE"])
+@login_required
+def deleteCertificate(admin_email, certificate_id):
+    try:
+        certificate_id = certificate_id
+        mycursor.execute("SELECT id FROM admin WHERE email = (%s)", (admin_email,))
+        loggedin_admin_id = mycursor.fetchone()["id"]
+        mycursor.execute("SELECT * FROM certificate WHERE id = (%s)", (certificate_id,))
+        certificate = mycursor.fetchone()
+        if int(certificate["createdBy"]) != int(loggedin_admin_id):
+            return jsonify({"Message": "You do not have access to delete this certificate"}), 403
+        mycursor.execute("DELETE FROM certificate WHERE id = (%s)", (certificate_id,))
+        mydb.commit()
+        return jsonify({"Message": "Certificate Deleted"})
+    except Exception as e:
+        print(e)
+        return jsonify({"Message": "Something Went Wrong"}), 500

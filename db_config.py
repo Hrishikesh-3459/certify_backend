@@ -46,7 +46,7 @@ class dbMysql():
             "firstName VARCHAR(255) NOT NULL,"
             "lastName VARCHAR(255) NOT NULL,"
             "email VARCHAR(255) NOT NULL,"
-            "phone INT,"
+            "phone BIGINT,"
             "PRIMARY KEY (id),"
             "FOREIGN KEY (createdBy) REFERENCES admin(id))")
         self.mydb.commit()
