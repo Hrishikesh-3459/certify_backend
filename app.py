@@ -24,8 +24,8 @@ def after_request(response):
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Expires"] = 0
     response.headers["Pragma"] = "no-cache"
-    # adding the cors header property manually
     response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add("Access-Control-Allow-Methods", "*")
     response.headers.add('Access-Control-Allow-Headers',
                          'Content-Type,Authorization')
     return response
