@@ -125,10 +125,9 @@ def createCertificate(admin_email):
             return jsonify({"Message": "Required Feilds Empty"}), 401
         else:
             values.append(req_data[i])
-
     try:
         id = str(uuid1())
-        mycursor.execute("SELECT id FROM admin WHERE email = (%s)", (req_data["email"],))
+        mycursor.execute("SELECT id FROM admin WHERE email = (%s)", (admin_email,))
         phone = None
         if "phone" in req_data:
             phone = req_data["phone"]
@@ -145,7 +144,7 @@ def createCertificate(admin_email):
 
 @app.route("/certificate", methods=["GET"])
 @login_required
-def getCertificateDetails():
+def getCertificateDetails(admin_email):
     try:
         mycursor.execute("SELECT * FROM certificate")
         certificates = mycursor.fetchall()
@@ -155,7 +154,7 @@ def getCertificateDetails():
         return jsonify({"Message": "Something Went Wrong"}), 500
 
 @app.route("/certificate/<certificate_id>", methods=["GET"])
-def getCertificateById(admin_email, certificate_id):
+def getCertificateById( certificate_id):
     try:
         certificate_id = certificate_id
         mycursor.execute("SELECT * FROM certificate WHERE id = (%s)", (certificate_id, ))
